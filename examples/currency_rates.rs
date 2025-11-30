@@ -1,6 +1,6 @@
 use anyhow::Result;
-use betfair_rs::{config::Config, BetfairClient};
 use betfair_rs::dto::account::ListCurrencyRatesRequest;
+use betfair_rs::{config::Config, BetfairClient};
 use tracing::info;
 
 #[tokio::main]
@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
             println!("{:-<50}", "");
             println!("{:<10} {:>15}", "Currency", "Rate");
             println!("{:-<50}", "");
-            
+
             for rate in &rates {
                 println!("{:<10} {:>15}", rate.currency_code, rate.rate);
             }

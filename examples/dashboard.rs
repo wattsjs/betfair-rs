@@ -2344,7 +2344,8 @@ async fn handle_input(app: &mut App, key: KeyCode) -> Result<bool> {
                     // F5 = Force refresh (bypasses streaming)
                     if let Err(e) = app.perform_force_refresh().await {
                         app.error_message = Some(format!("Force refresh failed: {}", e));
-                        app.status_message = "⚠️ Force refresh failed - see error above".to_string();
+                        app.status_message =
+                            "⚠️ Force refresh failed - see error above".to_string();
                     }
                 }
                 KeyCode::Char('?') => app.mode = AppMode::Help,
@@ -2528,7 +2529,8 @@ async fn handle_input(app: &mut App, key: KeyCode) -> Result<bool> {
 
                                             // Set first runner as default
                                             if let Some(orderbook) = &app.current_orderbook {
-                                                if let Some(first_runner) = orderbook.runners.first()
+                                                if let Some(first_runner) =
+                                                    orderbook.runners.first()
                                                 {
                                                     app.order_selection_id =
                                                         first_runner.runner_id.to_string();
@@ -2614,7 +2616,8 @@ async fn handle_input(app: &mut App, key: KeyCode) -> Result<bool> {
                                 let bet_id = app.active_orders.get(index).map(|o| o.bet_id.clone());
                                 if let Some(bet_id) = bet_id {
                                     if let Err(e) = app.cancel_order(&bet_id).await {
-                                        app.error_message = Some(format!("Cancel order failed: {}", e));
+                                        app.error_message =
+                                            Some(format!("Cancel order failed: {}", e));
                                     }
                                 }
                             }

@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcRequest<T> {
@@ -58,6 +59,21 @@ pub struct InteractiveLoginResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiError {
+    #[serde(deserialize_with = "deserialize_error_code")]
     pub code: String,
     pub message: String,
+}
+
+fn deserialize_error_code<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    match value {
+        Value::String(s) => Ok(s),
+        Value::Number(num) => Ok(num.to_string()),
+        other => Err(serde::de::Error::custom(format!(
+            "unexpected type for Betfair API error code: {other}"
+        ))),
+    }
 }

@@ -89,8 +89,8 @@ impl RestClient {
                     let response_text = http_response.text().await?;
                     tracing::info!("Login response: {}", response_text);
 
-                    let response: LoginResponse = serde_json::from_str(&response_text)
-                        .map_err(|e| {
+                    let response: LoginResponse =
+                        serde_json::from_str(&response_text).map_err(|e| {
                             anyhow::anyhow!(
                                 "Failed to deserialize login response: {}\nResponse body: {}",
                                 e,
@@ -294,6 +294,17 @@ impl RestClient {
                     }
 
                     let json_response: JsonRpcResponse<U> = serde_json::from_str(&response_text)?;
+
+                    // Check for specific errors that shouldn't be retried
+                    if let Some(ref error) = json_response.error {
+                        // ANGX-0001 = TOO_MUCH_DATA - retrying won't help, need smaller request
+                        if error.message == "ANGX-0001" {
+                            return Err(anyhow::anyhow!(
+                                "Betfair API error: TOO_MUCH_DATA (ANGX-0001). Reduce the number of markets requested or the projection fields. Consider using maxResults <= 50 for requests with extensive projections."
+                            ));
+                        }
+                    }
+
                     json_response.result.ok_or_else(|| {
                         anyhow::anyhow!("No result in response: {:?}", json_response.error)
                     })
@@ -403,7 +414,7 @@ impl RestClient {
     }
 
     /// List currency exchange rates
-    /// 
+    ///
     /// Returns a list of currency rates based on given currency.
     /// Currently only GBP is supported as the from_currency parameter.
     pub async fn list_currency_rates(

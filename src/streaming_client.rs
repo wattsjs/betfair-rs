@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::connection_state::{ConnectionManager, ConnectionState};
-use crate::dto::streaming::{MarketDefinition, OrderChangeMessage, OrderFilter};
+use crate::dto::streaming::{MarketDefinition, MarketFilter, OrderChangeMessage, OrderFilter};
 use crate::order_cache::OrderCache;
 use crate::orderbook::Orderbook;
 use crate::streamer::BetfairStreamer;
@@ -39,8 +39,9 @@ pub struct StreamingClient {
 
 #[derive(Debug)]
 enum StreamingCommand {
-    Subscribe(String, usize),           // market_id, levels
-    SubscribeBatch(Vec<String>, usize), // market_ids, levels
+    Subscribe(String, usize),                 // market_id, levels
+    SubscribeBatch(Vec<String>, usize),       // market_ids, levels
+    SubscribeWithFilter(MarketFilter, usize), // market_filter, levels
     Unsubscribe(String),
     SubscribeOrders(Option<OrderFilter>), // order subscription with optional filter
     Stop,
@@ -226,6 +227,17 @@ impl StreamingClient {
                         let sub_msg = Self::create_market_subscription_message(&market_id, levels);
                         if let Err(e) = sender.send(sub_msg).await {
                             error!("Failed to send subscription: {e}");
+                        }
+                    }
+                    StreamingCommand::SubscribeWithFilter(filter, levels) => {
+                        info!(
+                            "Processing filter-based subscription with {levels} levels (eventTypeIds: {:?}, competitionIds: {:?})",
+                            filter.event_type_ids, filter.competition_ids
+                        );
+
+                        let sub_msg = Self::create_filter_subscription_message(&filter, levels);
+                        if let Err(e) = sender.send(sub_msg).await {
+                            error!("Failed to send filter subscription: {e}");
                         }
                     }
                     StreamingCommand::SubscribeBatch(market_ids, levels) => {
@@ -644,6 +656,19 @@ impl StreamingClient {
         Ok(())
     }
 
+    /// Subscribe using a market filter (sport, league, etc.) instead of specific market IDs
+    /// This is the recommended approach when monitoring entire sports or leagues
+    pub async fn subscribe_with_filter(&self, filter: MarketFilter, levels: usize) -> Result<()> {
+        if let Some(sender) = &self.command_sender {
+            sender
+                .send(StreamingCommand::SubscribeWithFilter(filter, levels))
+                .await?;
+        } else {
+            return Err(anyhow::anyhow!("Streaming client not started"));
+        }
+        Ok(())
+    }
+
     /// Unsubscribe from a market
     pub async fn unsubscribe_from_market(&self, market_id: String) -> Result<()> {
         if let Some(sender) = &self.command_sender {
@@ -720,6 +745,22 @@ impl StreamingClient {
 
         format!(
             "{{\"op\": \"marketSubscription\", \"id\": {id}, \"marketFilter\": {{ \"marketIds\":[{market_ids_json}]}}, \"marketDataFilter\": {{ \"fields\": [\"EX_BEST_OFFERS\", \"EX_MARKET_DEF\"], \"ladderLevels\": {levels}}}}}\r\n"
+        )
+    }
+
+    /// Create a market subscription message using a market filter
+    fn create_filter_subscription_message(filter: &MarketFilter, levels: usize) -> String {
+        // Use a timestamp-based ID to avoid conflicts
+        let id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis()
+            % 10000;
+
+        let filter_json = serde_json::to_string(filter).unwrap_or_else(|_| "{}".to_string());
+
+        format!(
+            "{{\"op\": \"marketSubscription\", \"id\": {id}, \"marketFilter\": {filter_json}, \"marketDataFilter\": {{ \"fields\": [\"EX_BEST_OFFERS\", \"EX_MARKET_DEF\"], \"ladderLevels\": {levels}}}}}\r\n"
         )
     }
 }

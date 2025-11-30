@@ -249,6 +249,56 @@ pub struct StrategyMatchChange {
     pub matched_lays: Option<Vec<Vec<Decimal>>>,
 }
 
+/// Market filter for streaming subscription
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct MarketFilter {
+    #[serde(rename = "marketIds", skip_serializing_if = "Option::is_none")]
+    pub market_ids: Option<Vec<String>>,
+    #[serde(rename = "bspMarket", skip_serializing_if = "Option::is_none")]
+    pub bsp_market: Option<bool>,
+    #[serde(rename = "bettingTypes", skip_serializing_if = "Option::is_none")]
+    pub betting_types: Option<Vec<String>>,
+    #[serde(rename = "eventTypeIds", skip_serializing_if = "Option::is_none")]
+    pub event_type_ids: Option<Vec<String>>,
+    #[serde(rename = "eventIds", skip_serializing_if = "Option::is_none")]
+    pub event_ids: Option<Vec<String>>,
+    #[serde(rename = "competitionIds", skip_serializing_if = "Option::is_none")]
+    pub competition_ids: Option<Vec<String>>,
+    #[serde(rename = "turnInPlayEnabled", skip_serializing_if = "Option::is_none")]
+    pub turn_in_play_enabled: Option<bool>,
+    #[serde(rename = "marketTypes", skip_serializing_if = "Option::is_none")]
+    pub market_types: Option<Vec<String>>,
+    #[serde(rename = "venues", skip_serializing_if = "Option::is_none")]
+    pub venues: Option<Vec<String>>,
+    #[serde(rename = "countryCodes", skip_serializing_if = "Option::is_none")]
+    pub country_codes: Option<Vec<String>>,
+    #[serde(rename = "raceTypes", skip_serializing_if = "Option::is_none")]
+    pub race_types: Option<Vec<String>>,
+}
+
+impl MarketFilter {
+    pub fn with_market_ids(market_ids: Vec<String>) -> Self {
+        Self {
+            market_ids: Some(market_ids),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_event_type_ids(event_type_ids: Vec<String>) -> Self {
+        Self {
+            event_type_ids: Some(event_type_ids),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_competition_ids(competition_ids: Vec<String>) -> Self {
+        Self {
+            competition_ids: Some(competition_ids),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct OrderFilter {
     #[serde(
