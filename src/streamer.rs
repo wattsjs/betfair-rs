@@ -86,6 +86,7 @@ impl BetfairStreamer {
     }
 
     pub async fn connect_betfair_tls_stream(&mut self) -> Result<()> {
+        crate::ensure_crypto_provider();
         self.connection_manager
             .set_state(ConnectionState::Connecting)
             .await;
